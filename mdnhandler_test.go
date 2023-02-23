@@ -1,4 +1,4 @@
-package mdnshandler
+package github.com/calebcoverdale/caddymdns
 
 import (
 	"io/ioutil"
