@@ -1,0 +1,23 @@
+{
+  # Global options, such as log file location and email address for ACME
+  admin
+	log {
+		output file ./caddy1.log {
+			roll_keep 10
+			roll_size 100MiB
+		}
+	}
+  order mdnshandler first
+}
+
+
+*.${hostname}.com {
+	@unraid host unraid.${hostname}.com
+	handle @unraid {
+    reverse_proxy / http://localhost:8080
+    mdnshandler {
+        name    unraid.local
+        service _http._tcp.local
+    }
+	}
+}
