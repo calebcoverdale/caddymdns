@@ -1,4 +1,4 @@
-module mdnshandler
+module github.com/calebcoverdale/caddymdns
 
 go 1.19
 
