@@ -4,18 +4,21 @@ import (
 	"net/http"
 
 	"github.com/caddyserver/caddy/v2"
+	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/hashicorp/mdns"
 )
 
 func init() {
 	caddy.RegisterModule(MDNSHandler{})
+	httpcaddyfile.RegisterHandlerDirective("mdns", parseCaddyfile)
 }
 
 // MDNSHandler is a Caddy module that resolves the .local hostname using mDNS.
 type MDNSHandler struct {
-	Name    string `json:"name,omitempty"`
-	Service string `json:"service,omitempty"`
+	Name      string  `json:"name,omitempty"`
+	Service   string  `json:"service,omitempty"`
+	Resolvers *string `json:"resolvers,omitempty"`
 }
 
 func (h MDNSHandler) CaddyModule() caddy.ModuleInfo {
@@ -38,6 +41,36 @@ func (h *MDNSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, next cad
 	}
 
 	return next.ServeHTTP(w, r)
+}
+
+func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
+	var handler MDNSHandler
+
+	for h.Next() {
+		if !h.Args(&handler.Name, &handler.Service) {
+			return nil, h.ArgErr()
+		}
+		if h.NextBlock(0) {
+			for {
+				switch h.Val() {
+				case "resolvers":
+					var resolvers string
+					if !h.Args(&resolvers) {
+						return nil, h.ArgErr()
+					}
+					handler.Resolvers = &resolvers // create a new pointer to the string
+				default:
+					if h.Val() != "}" {
+						return nil, h.Errf("unrecognized subdirective: %s", h.Val())
+					}
+					return &handler, nil
+				}
+			}
+		}
+
+	}
+
+	return nil, h.Err("missing closing brace for mdns directive")
 }
 
 // Interface guards
